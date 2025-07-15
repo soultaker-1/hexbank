@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Points Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div id="app" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <h1 id="welcome-message" class="text-xl font-bold text-center"></h1>
+        <div id="points-menu" class="space-y-4">
+            <button onclick="showAddPoints()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Add Points</button>
+            <button onclick="showSubtractPoints()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subtract Points</button>
+            <button onclick="checkBalance()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Check Balance</button>
+            <button onclick="backToMain()" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">Back to Main Menu</button>
+            <p id="points-message" class="text-red-500 text-sm"></p>
+        </div>
+        <div id="add-points-form" class="hidden space-y-4">
+            <h2 class="text-lg font-bold text-center">Add Points</h2>
+            <p id="add-points-info" class="text-center text-sm"></p>
+            <input id="add-amount" type="number" placeholder="Amount to add" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="addPoints()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Add</button>
+                <button onclick="showPointsMenu()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="add-points-message" class="text-green-500 text-sm"></p>
+        </div>
+        <div id="subtract-points-form" class="hidden space-y-4">
+            <h2 class="text-lg font-bold text-center">Subtract Points</h2>
+            <p id="subtract-points-info" class="text-center text-sm"></p>
+            <input id="subtract-amount" type="number" placeholder="Amount to subtract" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="subtractPoints()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subtract</button>
+                <button onclick="showPointsMenu()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="subtract-points-message" class="text-green-500 text-sm"></p>
+        </div>
+    </div>
+    <script>
+        const BASE_URL = 'http://localhost:5000';
+        document.getElementById('welcome-message').textContent = `Welcome ${sessionStorage.getItem('fname')}`;
+
+        function showPointsMenu() {
+            hideAll();
+            document.getElementById('points-menu').classList.remove('hidden');
+        }
+
+        function showAddPoints() {
+            hideAll();
+            document.getElementById('add-points-form').classList.remove('hidden');
+            fetchAddPointsInfo();
+        }
+
+        function showSubtractPoints() {
+            hideAll();
+            document.getElementById('subtract-points-form').classList.remove('hidden');
+            fetchSubtractPointsInfo();
+        }
+
+        function hideAll() {
+            document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById('points-message').textContent = '';
+            document.getElementById('add-points-message').textContent = '';
+            document.getElementById('subtract-points-message').textContent = '';
+        }
+
+        function backToMain() {
+            sessionStorage.clear();
+            window.location.href = '/';
+        }
+
+        async function fetchAddPointsInfo() {
+            const totalRes = await fetch(`${BASE_URL}/points/total`).then(res => res.json());
+            const balanceRes = await fetch(`${BASE_URL}/points/${sessionStorage.getItem('userId')}`).then(res => res.json());
+            document.getElementById('add-points-info').textContent = `Available: ${100000 - totalRes.total} | Your Points: ${balanceRes.points}`;
+        }
+
+        async function fetchSubtractPointsInfo() {
+            const res = await fetch(`${BASE_URL}/points/${sessionStorage.getItem('userId')}`).then(res => res.json());
+            document.getElementById('subtract-points-info').textContent = `Your Points: ${res.points}`;
+        }
+
+        async function addPoints() {
+            const amount = parseInt(document.getElementById('add-amount').value);
+            const messageEl = document.getElementById('add-points-message');
+            messageEl.className = 'text-red-500 text-sm'; // Reset to red for errors
+            if (!amount || amount <= 0) {
+                messageEl.textContent = 'Invalid amount.';
+                return;
+            }
+            const res = await fetch(`${BASE_URL}/points/add/${sessionStorage.getItem('userId')}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount })
+            }).then(res => res.json());
+            if (res.success) {
+                messageEl.className = 'text-green-500 text-sm';
+                messageEl.textContent = 'Transaction has been successful';
+                setTimeout(showPointsMenu, 2000); // Show message for 2 seconds
+            } else {
+                messageEl.textContent = res.message;
+            }
+        }
+
+        async function subtractPoints() {
+            const amount = parseInt(document.getElementById('subtract-amount').value);
+            const messageEl = document.getElementById('subtract-points-message');
+            messageEl.className = 'text-red-500 text-sm'; // Reset to red for errors
+            if (!amount || amount <= 0) {
+                messageEl.textContent = 'Invalid amount.';
+                return;
+            }
+            const res = await fetch(`${BASE_URL}/points/subtract/${sessionStorage.getItem('userId')}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount })
+            }).then(res => res.json());
+            if (res.success) {
+                messageEl.className = 'text-green-500 text-sm';
+                messageEl.textContent = 'Transaction has been successful';
+                setTimeout(showPointsMenu, 2000); // Show message for 2 seconds
+            } else {
+                messageEl.textContent = res.message;
+            }
+        }
+
+        async function checkBalance() {
+            const res = await fetch(`${BASE_URL}/points/${sessionStorage.getItem('userId')}`).then(res => res.json());
+            alert(`Your balance is: ${res.points}`);
+            showPointsMenu();
+        }
+
+        // Initialize
+        showPointsMenu();
+    </script>
+</body>
+</html>

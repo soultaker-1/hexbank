@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In/Up</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div id="app" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <div id="main-menu" class="space-y-4">
+            <h1 class="text-xl font-bold text-center">Welcome</h1>
+            <button onclick="showSignup()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Sign Up</button>
+            <button onclick="showSignin()" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Sign In</button>
+            <button onclick="exit()" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">Exit</button>
+        </div>
+        <div id="signup-form" class="hidden space-y-4">
+            <h1 class="text-xl font-bold text-center">Sign Up</h1>
+            <input id="signup-fname" type="text" placeholder="First Name" class="w-full p-2 border rounded">
+            <input id="signup-lname" type="text" placeholder="Last Name" class="w-full p-2 border rounded">
+            <input id="signup-pw1" type="password" placeholder="Password" class="w-full p-2 border rounded">
+            <input id="signup-pw2" type="password" placeholder="Confirm Password" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="confirmSignup()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Confirm</button>
+                <button onclick="showMain()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="signup-message" class="text-red-500 text-sm"></p>
+        </div>
+        <div id="signin-form" class="hidden space-y-4">
+            <h1 class="text-xl font-bold text-center">Sign In</h1>
+            <input id="signin-fname" type="text" placeholder="First Name" class="w-full p-2 border rounded">
+            <input id="signin-lname" type="text" placeholder="Last Name" class="w-full p-2 border rounded">
+            <input id="signin-pw" type="password" placeholder="Password" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="signin()" class="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600">Sign In</button>
+                <button onclick="showMain()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="signin-message" class="text-red-500 text-sm"></p>
+        </div>
+    </div>
+    <script>
+        const BASE_URL = 'http://localhost:5000';
+
+        function showMain() {
+            hideAll();
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function showSignup() {
+            hideAll();
+            document.getElementById('signup-form').classList.remove('hidden');
+        }
+
+        function showSignin() {
+            hideAll();
+            document.getElementById('signin-form').classList.remove('hidden');
+        }
+
+        function hideAll() {
+            document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById('signup-message').textContent = '';
+            document.getElementById('signin-message').textContent = '';
+        }
+
+        function exit() {
+            alert('Exiting application.');
+        }
+
+        async function confirmSignup() {
+            const fname = document.getElementById('signup-fname').value;
+            const lname = document.getElementById('signup-lname').value;
+            const pw1 = document.getElementById('signup-pw1').value;
+            const pw2 = document.getElementById('signup-pw2').value;
+            const messageEl = document.getElementById('signup-message');
+
+            if (!fname || !lname || !pw1 || !pw2) {
+                messageEl.textContent = 'Please fill all fields.';
+                return;
+            }
+
+            const snameRes = await fetch(`${BASE_URL}/sname`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fname, lname })
+            }).then(res => res.json());
+
+            if (snameRes.exists) {
+                messageEl.textContent = 'Name already exists. Try signing in.';
+                return;
+            }
+
+            if (pw1 !== pw2) {
+                messageEl.textContent = 'Passwords do not match.';
+                return;
+            }
+
+            const idRes = await fetch(`${BASE_URL}/id`).then(res => res.json());
+            const signupRes = await fetch(`${BASE_URL}/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: idRes.id, fname, lname, password: pw1 })
+            }).then(res => res.json());
+
+            if (signupRes.success) {
+                alert('Signup successful!');
+                showMain();
+            } else {
+                messageEl.textContent = 'Signup failed.';
+            }
+        }
+
+        async function signin() {
+            const fname = document.getElementById('signin-fname').value;
+            const lname = document.getElementById('signin-lname').value;
+            const password = document.getElementById('signin-pw').value;
+            const messageEl = document.getElementById('signin-message');
+
+            if (!fname || !lname || !password) {
+                messageEl.textContent = 'Please fill all fields.';
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/signin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fname, lname, password })
+            }).then(res => res.json());
+
+            if (res.success) {
+                sessionStorage.setItem('userId', res.id);
+                sessionStorage.setItem('fname', res.fname);
+                window.location.href = '/points';
+            } else {
+                messageEl.textContent = 'Incorrect name or password.';
+            }
+        }
+    </script>
+</body>
+</html>

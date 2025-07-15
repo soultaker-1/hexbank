@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Points Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div id="app" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <!-- Main Menu -->
+        <div id="main-menu" class="space-y-4">
+            <h1 class="text-2xl font-bold text-center">Welcome</h1>
+            <button onclick="showSignup()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">1. Sign Up</button>
+            <button onclick="showSignin()" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">2. Sign In</button>
+            <button onclick="exit()" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">0. Exit</button>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="hidden space-y-4">
+            <h1 class="text-2xl font-bold text-center">Sign Up</h1>
+            <input id="signup-fname" type="text" placeholder="First Name" class="w-full p-2 border rounded">
+            <input id="signup-lname" type="text" placeholder="Last Name" class="w-full p-2 border rounded">
+            <input id="signup-pw1" type="password" placeholder="Password" class="w-full p-2 border rounded">
+            <input id="signup-pw2" type="password" placeholder="Confirm Password" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="confirmSignup()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">1. Confirm</button>
+                <button onclick="resetSignup()" class="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600">2. Reset</button>
+                <button onclick="backToMain()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">0. Exit</button>
+            </div>
+            <p id="signup-message" class="text-red-500"></p>
+        </div>
+
+        <!-- Signin Form -->
+        <div id="signin-form" class="hidden space-y-4">
+            <h1 class="text-2xl font-bold text-center">Sign In</h1>
+            <input id="signin-fname" type="text" placeholder="First Name" class="w-full p-2 border rounded">
+            <input id="signin-lname" type="text" placeholder="Last Name" class="w-full p-2 border rounded">
+            <input id="signin-pw" type="password" placeholder="Password" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="signin()" class="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600">Sign In</button>
+                <button onclick="backToMain()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="signin-message" class="text-red-500"></p>
+        </div>
+
+        <!-- Page 2 (Post-Signin) -->
+        <div id="page2" class="hidden space-y-4">
+            <h1 id="welcome-message" class="text-2xl font-bold text-center"></h1>
+            <button onclick="showAddPoints()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">1. Add Points</button>
+            <button onclick="showSubtractPoints()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">2. Subtract Points</button>
+            <button onclick="checkBalance()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">3. Check Balance</button>
+            <button onclick="backToMain()" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">0. Back to Main Menu</button>
+            <p id="page2-message" class="text-red-500"></p>
+        </div>
+
+        <!-- Add Points Form -->
+        <div id="add-points-form" class="hidden space-y-4">
+            <h1 class="text-2xl font-bold text-center">Add Points</h1>
+            <p id="add-points-info" class="text-center"></p>
+            <input id="add-amount" type="number" placeholder="Enter amount to add" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="addPoints()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Add</button>
+                <button onclick="backToPage2()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="add-points-message" class="text-red-500"></p>
+        </div>
+
+        <!-- Subtract Points Form -->
+        <div id="subtract-points-form" class="hidden space-y-4">
+            <h1 class="text-2xl font-bold text-center">Subtract Points</h1>
+            <p id="subtract-points-info" class="text-center"></p>
+            <input id="subtract-amount" type="number" placeholder="Enter amount to subtract" class="w-full p-2 border rounded">
+            <div class="flex space-x-2">
+                <button onclick="subtractPoints()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subtract</button>
+                <button onclick="backToPage2()" class="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600">Back</button>
+            </div>
+            <p id="subtract-points-message" class="text-red-500"></p>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = null;
+
+        // Navigation Functions
+        function showSignup() {
+            hideAll();
+            document.getElementById('signup-form').classList.remove('hidden');
+        }
+
+        function showSignin() {
+            hideAll();
+            document.getElementById('signin-form').classList.remove('hidden');
+        }
+
+        function showPage2() {
+            hideAll();
+            document.getElementById('page2').classList.remove('hidden');
+        }
+
+        function showAddPoints() {
+            hideAll();
+            document.getElementById('add-points-form').classList.remove('hidden');
+            fetchAddPointsInfo();
+        }
+
+        function showSubtractPoints() {
+            hideAll();
+            document.getElementById('subtract-points-form').classList.remove('hidden');
+            fetchSubtractPointsInfo();
+        }
+
+        function backToMain() {
+            hideAll();
+            document.getElementById('main-menu').classList.remove('hidden');
+            currentUserId = null;
+        }
+
+        function backToPage2() {
+            hideAll();
+            document.getElementById('page2').classList.remove('hidden');
+        }
+
+        function hideAll() {
+            document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
+            clearMessages();
+        }
+
+        function clearMessages() {
+            document.querySelectorAll('p[id$="-message"]').forEach(p => p.textContent = '');
+        }
+
+        function exit() {
+            alert('Exiting application.');
+            window.close(); // Note: window.close() may not work in all browsers
+        }
+
+        // Simulated Backend Calls (Replace with actual API calls)
+        async function checkSname(fname, lname) {
+            // Simulate sname() function: Check if name exists
+            return new Promise(resolve => setTimeout(() => resolve(false), 500)); // Simulate no existing user
+        }
+
+        async function getNextId() {
+            // Simulate id() function
+            return new Promise(resolve => setTimeout(() => resolve(Math.floor(Math.random() * 1000) + 1), 500));
+        }
+
+        async function signupBackend(fname, lname, password) {
+            // Simulate signup with hashed password
+            return new Promise(resolve => setTimeout(() => resolve(true), 500));
+        }
+
+        async function signinBackend(fname, lname, password) {
+            // Simulate signin with password check
+            return new Promise(resolve => setTimeout(() => resolve({ success: true, id: Math.floor(Math.random() * 1000) + 1, fname }), 500));
+        }
+
+        async function checkBalanceBackend(id) {
+            // Simulate check(id) function
+            return new Promise(resolve => setTimeout(() => resolve(Math.floor(Math.random() * 10000)), 500));
+        }
+
+        async function getTotalPoints() {
+            // Simulate sum of points
+            return new Promise(resolve => setTimeout(() => resolve(Math.floor(Math.random() * 50000)), 500));
+        }
+
+        async function addPointsBackend(id, amount) {
+            // Simulate add points
+            return new Promise(resolve => setTimeout(() => resolve(true), 500));
+        }
+
+        async function subtractPointsBackend(id, amount) {
+            // Simulate subtract points
+            return new Promise(resolve => setTimeout(() => resolve(true), 500));
+        }
+
+        // Form Handlers
+        async function confirmSignup() {
+            const fname = document.getElementById('signup-fname').value;
+            const lname = document.getElementById('signup-lname').value;
+            const pw1 = document.getElementById('signup-pw1').value;
+            const pw2 = document.getElementById('signup-pw2').value;
+            const messageEl = document.getElementById('signup-message');
+
+            if (!fname || !lname || !pw1 || !pw2) {
+                messageEl.textContent = 'Please fill all fields.';
+                return;
+            }
+
+            if (await checkSname(fname, lname)) {
+                messageEl.textContent = 'Name already exists. Try signing in.';
+                return;
+            }
+
+            if (pw1 !== pw2) {
+                messageEl.textContent = 'Passwords do not match.';
+                return;
+            }
+
+            if (confirm(`Confirm: ${fname} ${lname}, Password: ${pw1}`)) {
+                const success = await signupBackend(fname, lname, pw1);
+                if (success) {
+                    alert('Your data has been successfully added.');
+                    backToMain();
+                } else {
+                    messageEl.textContent = 'Signup failed. Try again.';
+                }
+            }
+        }
+
+        function resetSignup() {
+            document.getElementById('signup-fname').value = '';
+            document.getElementById('signup-lname').value = '';
+            document.getElementById('signup-pw1').value = '';
+            document.getElementById('signup-pw2').value = '';
+            document.getElementById('signup-message').textContent = '';
+        }
+
+        async function signin() {
+            const fname = document.getElementById('signin-fname').value;
+            const lname = document.getElementById('signin-lname').value;
+            const password = document.getElementById('signin-pw').value;
+            const messageEl = document.getElementById('signin-message');
+
+            if (!fname || !lname || !password) {
+                messageEl.textContent = 'Please fill all fields.';
+                return;
+            }
+
+            const result = await signinBackend(fname, lname, password);
+            if (result.success) {
+                currentUserId = result.id;
+                document.getElementById('welcome-message').textContent = `Welcome ${result.fname}`;
+                showPage2();
+            } else {
+                messageEl.textContent = 'Either your password or name is incorrect.';
+            }
+        }
+
+        async function fetchAddPointsInfo() {
+            const totalPoints = await getTotalPoints();
+            const userPoints = await checkBalanceBackend(currentUserId);
+            document.getElementById('add-points-info').textContent = `Total available points: ${100000 - totalPoints}\nYour total: ${userPoints}`;
+        }
+
+        async function addPoints() {
+            const amount = parseInt(document.getElementById('add-amount').value);
+            const messageEl = document.getElementById('add-points-message');
+            const totalPoints = await getTotalPoints();
+
+            if (isNaN(amount) || amount <= 0) {
+                messageEl.textContent = 'Invalid value. Try again.';
+                return;
+            }
+
+            if (amount > (100000 - totalPoints)) {
+                messageEl.textError = 'Points exceed the available points.';
+                return;
+            }
+
+            const success = await addPointsBackend(currentUserId, amount);
+            if (success) {
+                alert('Transaction has been successful.');
+                backToPage2();
+            } else {
+                messageEl.textContent = 'Transaction failed. Try again.';
+            }
+        }
+
+        async function fetchSubtractPointsInfo() {
+            const userPoints = await checkBalanceBackend(currentUserId);
+            document.getElementById('subtract-points-info').textContent = `Total amount is: ${userPoints}`;
+        }
+
+        async function subtractPoints() {
+            const amount = parseInt(document.getElementById('subtract-amount').value);
+            const messageEl = document.getElementById('subtract-points-message');
+            const userPoints = await checkBalanceBackend(currentUserId);
+
+            if (isNaN(amount) || amount <= 0) {
+                messageEl.textContent = 'Invalid value. Try again.';
+                return;
+            }
+
+            if (amount > userPoints) {
+                messageEl.textContent = 'Insufficient balance.';
+                return;
+            }
+
+            const success = await subtractPointsBackend(currentUserId, amount);
+            if (success) {
+                alert('Transaction has been successful.');
+                backToPage2();
+            } else {
+                messageEl.textContent = 'Transaction failed. Try again.';
+            }
+        }
+
+        async function checkBalance() {
+            const balance = await checkBalanceBackend(currentUserId);
+            alert(`Your balance is: ${balance}`);
+            showPage2();
+        }
+    </script>
+</body>
+</html>
