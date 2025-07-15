@@ -504,7 +504,7 @@ export default function PointsManagementApp() {
             {currentView === "main-menu" && (
               <div className="space-y-4">
                 <div className="bank-logo">PM</div>
-                <h1 className="text-3xl font-light text-gray-800 mb-6">Welcome to PointsManager</h1>
+                <h1 className="text-3xl font-light text-gray-800 mb-6">Welcome to Points Manager</h1>
                 <p className="text-gray-600 mb-8">Your trusted points management system</p>
 
                 <Button
